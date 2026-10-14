@@ -18,11 +18,20 @@ public class PedidoService {
         this.pedidoRepository = pedidoRepository;
     }
 
-    // Crear un nuevo pedido
+    // Crear un nuevo pedido con sus detalles
     public Pedido crearPedido(Pedido pedido) {
+
         pedido.setId(null);
         pedido.setEstado("PENDIENTE");
         pedido.setFechaPedido(null);
+
+        // Relacionar los detalles con el pedido
+        if (pedido.getDetalles() != null) {
+            pedido.getDetalles().forEach(detalle -> {
+                detalle.setId(null);
+                detalle.setPedido(pedido);
+            });
+        }
 
         return pedidoRepository.save(pedido);
     }
@@ -44,7 +53,9 @@ public class PedidoService {
 
     // Buscar pedidos por estado
     public List<Pedido> buscarPorEstado(String estado) {
-        return pedidoRepository.findByEstado(estado.toUpperCase());
+        return pedidoRepository.findByEstado(
+                estado.trim().toUpperCase()
+        );
     }
 
     // Buscar pedidos de un usuario por estado
@@ -54,7 +65,7 @@ public class PedidoService {
     ) {
         return pedidoRepository.findByUsuarioIdAndEstado(
                 usuarioId,
-                estado.toUpperCase()
+                estado.trim().toUpperCase()
         );
     }
 
@@ -71,7 +82,11 @@ public class PedidoService {
         }
 
         return pedidoRepository.findById(id).map(pedido -> {
-            pedido.setEstado(estado.trim().toUpperCase());
+
+            pedido.setEstado(
+                    estado.trim().toUpperCase()
+            );
+
             return pedidoRepository.save(pedido);
         });
     }

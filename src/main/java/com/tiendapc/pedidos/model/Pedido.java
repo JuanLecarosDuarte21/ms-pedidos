@@ -2,12 +2,15 @@
 package com.tiendapc.pedidos.model;
 
 import jakarta.persistence.*;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "pedidos")
@@ -23,8 +26,11 @@ public class Pedido {
     private Long usuarioId;
 
     @NotNull(message = "El total es obligatorio")
-    @DecimalMin(value = "0.0", inclusive = false,
-            message = "El total debe ser mayor a cero")
+    @DecimalMin(
+        value = "0.0",
+        inclusive = false,
+        message = "El total debe ser mayor a cero"
+    )
     @Column(nullable = false, precision = 12, scale = 2)
     private BigDecimal total;
 
@@ -33,6 +39,14 @@ public class Pedido {
 
     @Column(nullable = false)
     private LocalDateTime fechaPedido;
+
+    @Valid
+    @OneToMany(
+        mappedBy = "pedido",
+        cascade = CascadeType.ALL,
+        orphanRemoval = true
+    )
+    private List<DetallePedido> detalles = new ArrayList<>();
 
     public Pedido() {
     }
@@ -45,6 +59,21 @@ public class Pedido {
 
         if (estado == null || estado.isBlank()) {
             estado = "PENDIENTE";
+        }
+
+        sincronizarDetalles();
+    }
+
+    @PreUpdate
+    public void antesDeActualizar() {
+        sincronizarDetalles();
+    }
+
+    private void sincronizarDetalles() {
+        if (detalles != null) {
+            for (DetallePedido detalle : detalles) {
+                detalle.setPedido(this);
+            }
         }
     }
 
@@ -86,5 +115,17 @@ public class Pedido {
 
     public void setFechaPedido(LocalDateTime fechaPedido) {
         this.fechaPedido = fechaPedido;
+    }
+
+    public List<DetallePedido> getDetalles() {
+        return detalles;
+    }
+
+    public void setDetalles(List<DetallePedido> detalles) {
+        this.detalles = detalles != null
+                ? detalles
+                : new ArrayList<>();
+
+        sincronizarDetalles();
     }
 }
